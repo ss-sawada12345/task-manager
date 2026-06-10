@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タスク管理</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 24px;
+    }
+
+    /* 入力フォーム */
+    .input-card {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .input-card input[type="text"] {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 15px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .input-card input[type="text"]:focus {
+      border-color: #4f46e5;
+    }
+
+    .input-card select {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 14px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      outline: none;
+      background: #fff;
+      color: #374151;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .input-card select:focus {
+      border-color: #4f46e5;
+    }
+
+    .input-card textarea {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 14px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      outline: none;
+      resize: vertical;
+      min-height: 72px;
+      font-family: inherit;
+      color: #374151;
+      transition: border-color 0.15s;
+    }
+
+    .input-card textarea:focus {
+      border-color: #4f46e5;
+    }
+
+    .input-card textarea::placeholder,
+    .input-card input::placeholder {
+      color: #9ca3af;
+    }
+
+    .form-footer {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .add-btn {
+      padding: 10px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      background: #4f46e5;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .add-btn:hover { background: #4338ca; }
+    .add-btn:active { background: #3730a3; }
+
+    /* フィルター */
+    .filter-section {
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 5px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #6b7280;
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover {
+      border-color: #4f46e5;
+      color: #4f46e5;
+    }
+
+    .filter-btn.active {
+      background: #4f46e5;
+      border-color: #4f46e5;
+      color: #fff;
+    }
+
+    /* 種別フィルター（カテゴリ色に合わせる） */
+    .filter-btn[data-category="会計"].active   { background: #059669; border-color: #059669; }
+    .filter-btn[data-category="AI"].active     { background: #7c3aed; border-color: #7c3aed; }
+    .filter-btn[data-category="給与"].active   { background: #d97706; border-color: #d97706; }
+    .filter-btn[data-category="確認事項"].active { background: #2563eb; border-color: #2563eb; }
+
+    .summary {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+
+    /* タスクリスト */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .task-item {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 14px 16px;
+      transition: opacity 0.2s;
+    }
+
+    .task-item.done {
+      opacity: 0.5;
+    }
+
+    .task-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .task-item input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      accent-color: #4f46e5;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .task-label {
+      flex: 1;
+      font-size: 15px;
+      color: #1a1a1a;
+      word-break: break-word;
+    }
+
+    .task-item.done .task-label {
+      text-decoration: line-through;
+      color: #9ca3af;
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #d1d5db;
+      font-size: 17px;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .delete-btn:hover { color: #ef4444; }
+
+    .edit-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #d1d5db;
+      font-size: 15px;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .edit-btn:hover { color: #4f46e5; }
+
+    /* インライン編集フォーム */
+    .edit-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .edit-form input[type="text"],
+    .edit-form select,
+    .edit-form textarea {
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 14px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      outline: none;
+      font-family: inherit;
+      color: #374151;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+
+    .edit-form input[type="text"]:focus,
+    .edit-form select:focus,
+    .edit-form textarea:focus {
+      border-color: #4f46e5;
+    }
+
+    .edit-form textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .edit-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .btn-save {
+      padding: 7px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      background: #4f46e5;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-save:hover { background: #4338ca; }
+
+    .btn-cancel {
+      padding: 7px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #6b7280;
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-cancel:hover { border-color: #9ca3af; color: #374151; }
+
+    /* 種別タグ */
+    .category-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+
+    .category-tag.会計     { background: #d1fae5; color: #065f46; }
+    .category-tag.AI       { background: #ede9fe; color: #5b21b6; }
+    .category-tag.給与     { background: #fef3c7; color: #92400e; }
+    .category-tag.確認事項 { background: #dbeafe; color: #1e40af; }
+
+    /* メモ */
+    .task-memo {
+      margin-top: 8px;
+      margin-left: 27px;
+      font-size: 13px;
+      color: #6b7280;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #9ca3af;
+      font-size: 14px;
+      padding: 40px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>タスク管理</h1>
+
+    <div class="input-card">
+      <input type="text" id="taskInput" placeholder="タスクを入力してください" />
+      <select id="categorySelect">
+        <option value="">種別なし</option>
+        <option value="会計">会計</option>
+        <option value="AI">AI</option>
+        <option value="給与">給与</option>
+        <option value="確認事項">確認事項</option>
+      </select>
+      <textarea id="memoInput" placeholder="メモ（任意）"></textarea>
+      <div class="form-footer">
+        <button class="add-btn" id="addBtn">追加　⌘↵</button>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <p class="summary" id="summary"></p>
+      <div class="filter-row">
+        <button class="filter-btn active" data-filter="all">全て</button>
+        <button class="filter-btn" data-filter="active">未完了</button>
+        <button class="filter-btn" data-filter="done">完了</button>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn" data-category="会計">会計</button>
+        <button class="filter-btn" data-category="AI">AI</button>
+        <button class="filter-btn" data-category="給与">給与</button>
+        <button class="filter-btn" data-category="確認事項">確認事項</button>
+      </div>
+    </div>
+
+    <div class="task-list" id="taskList"></div>
+    <p class="empty-state" id="emptyState">タスクがありません</p>
+  </div>
+
+  <script>
+    const taskInput      = document.getElementById('taskInput');
+    const categorySelect = document.getElementById('categorySelect');
+    const memoInput      = document.getElementById('memoInput');
+    const addBtn         = document.getElementById('addBtn');
+    const taskList       = document.getElementById('taskList');
+    const summary        = document.getElementById('summary');
+    const emptyState     = document.getElementById('emptyState');
+
+    let tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+    let currentFilter   = 'all';
+    let currentCategory = '';
+    let editingIndex    = -1;
+
+    function save() {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    function filteredTasks() {
+      return tasks.filter(t => {
+        const statusOk =
+          currentFilter === 'all'    ? true :
+          currentFilter === 'active' ? !t.done :
+          t.done;
+        const categoryOk = currentCategory === '' || t.category === currentCategory;
+        return statusOk && categoryOk;
+      });
+    }
+
+    function render() {
+      taskList.innerHTML = '';
+
+      const total     = tasks.length;
+      const doneCount = tasks.filter(t => t.done).length;
+      summary.textContent = total > 0 ? `${total} 件中 ${doneCount} 件完了` : '';
+
+      const visible = filteredTasks();
+      emptyState.style.display = visible.length === 0 ? 'block' : 'none';
+
+      visible.forEach((task) => {
+        const index = tasks.indexOf(task);
+
+        const item = document.createElement('div');
+        item.className = 'task-item' + (task.done ? ' done' : '');
+
+        if (editingIndex === index) {
+          // インライン編集フォーム
+          const form = document.createElement('div');
+          form.className = 'edit-form';
+
+          const editText = document.createElement('input');
+          editText.type = 'text';
+          editText.value = task.text;
+
+          const editCategory = document.createElement('select');
+          ['', '会計', 'AI', '給与', '確認事項'].forEach(val => {
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = val || '種別なし';
+            if (val === task.category) opt.selected = true;
+            editCategory.appendChild(opt);
+          });
+
+          const editMemo = document.createElement('textarea');
+          editMemo.placeholder = 'メモ（任意）';
+          editMemo.value = task.memo || '';
+
+          const actions = document.createElement('div');
+          actions.className = 'edit-actions';
+
+          const cancelBtn = document.createElement('button');
+          cancelBtn.className = 'btn-cancel';
+          cancelBtn.textContent = 'キャンセル';
+          cancelBtn.addEventListener('click', () => {
+            editingIndex = -1;
+            render();
+          });
+
+          const saveBtn = document.createElement('button');
+          saveBtn.className = 'btn-save';
+          saveBtn.textContent = '保存';
+          saveBtn.addEventListener('click', () => {
+            const newText = editText.value.trim();
+            if (!newText) return;
+            tasks[index].text     = newText;
+            tasks[index].category = editCategory.value;
+            tasks[index].memo     = editMemo.value.trim();
+            editingIndex = -1;
+            save();
+            render();
+          });
+
+          const saveOnCmd = (e) => { if (e.key === 'Enter' && e.metaKey) saveBtn.click(); };
+          editText.addEventListener('keydown', saveOnCmd);
+          editMemo.addEventListener('keydown', saveOnCmd);
+
+          actions.appendChild(cancelBtn);
+          actions.appendChild(saveBtn);
+          form.appendChild(editText);
+          form.appendChild(editCategory);
+          form.appendChild(editMemo);
+          form.appendChild(actions);
+          item.appendChild(form);
+
+          taskList.appendChild(item);
+          editText.focus();
+          return;
+        }
+
+        // 通常表示
+        const main = document.createElement('div');
+        main.className = 'task-main';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = task.done;
+        checkbox.addEventListener('change', () => {
+          tasks[index].done = checkbox.checked;
+          save();
+          render();
+        });
+
+        const label = document.createElement('span');
+        label.className = 'task-label';
+        label.textContent = task.text;
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn';
+        editBtn.textContent = '✎';
+        editBtn.title = '編集';
+        editBtn.addEventListener('click', () => {
+          editingIndex = index;
+          render();
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = '✕';
+        deleteBtn.title = '削除';
+        deleteBtn.addEventListener('click', () => {
+          tasks.splice(index, 1);
+          if (editingIndex === index) editingIndex = -1;
+          save();
+          render();
+        });
+
+        main.appendChild(checkbox);
+
+        if (task.category) {
+          const tag = document.createElement('span');
+          tag.className = `category-tag ${task.category}`;
+          tag.textContent = task.category;
+          main.appendChild(tag);
+        }
+
+        main.appendChild(label);
+        main.appendChild(editBtn);
+        main.appendChild(deleteBtn);
+        item.appendChild(main);
+
+        if (task.memo) {
+          const memo = document.createElement('p');
+          memo.className = 'task-memo';
+          memo.textContent = task.memo;
+          item.appendChild(memo);
+        }
+
+        taskList.appendChild(item);
+      });
+    }
+
+    function addTask() {
+      const text = taskInput.value.trim();
+      if (!text) return;
+      tasks.push({
+        text,
+        done: false,
+        category: categorySelect.value,
+        memo: memoInput.value.trim(),
+      });
+      taskInput.value = '';
+      categorySelect.value = '';
+      memoInput.value = '';
+      save();
+      render();
+      taskInput.focus();
+    }
+
+    addBtn.addEventListener('click', addTask);
+    taskInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.metaKey) addTask();
+    });
+    memoInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.metaKey) addTask();
+    });
+
+    // ステータスフィルター
+    document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentFilter = btn.dataset.filter;
+        document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        render();
+      });
+    });
+
+    // カテゴリフィルター（再クリックで解除）
+    document.querySelectorAll('.filter-btn[data-category]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (currentCategory === btn.dataset.category) {
+          currentCategory = '';
+          btn.classList.remove('active');
+        } else {
+          currentCategory = btn.dataset.category;
+          document.querySelectorAll('.filter-btn[data-category]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        }
+        render();
+      });
+    });
+
+    render();
+  </script>
+</body>
+</html>
